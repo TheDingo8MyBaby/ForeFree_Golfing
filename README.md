@@ -13,21 +13,22 @@ This write-up aims to provide a comprehensive understanding for a diverse reader
 
 
 ### Equipment
-For this research project, I used the following items/devices:
-- Proxmark3 Easy (512kb) running the [Iceman Firmware](https://github.com/RfidResearchGroup/proxmark3).
+For this research project, I used the following Hardware/Software/Applications/Cards:
+- Proxmark3 Easy (512kb) running the [Iceman Firmware](https://github.com/RfidResearchGroup/proxmark3)
+> A hardware platform used for interacting with and investigating High and Low-frequency RFID credentials such as the ones used at this Driving Range.
 - Gen1a Magic Mifare Classic Cards
+> A special type of RFID Card that can be reprogrammed to mimic various types of Mifare Classic Cards. These cards allow for easy cloning and modification of card data, including its UID (Unique Identifier).
 - Driving Range issued NFC Card
-
-The Proxmark3 Easy is a hardware platform used for interacting with and investigating High and Low-frequency RFID credentials such as the ones used at this facility.
+> A card that is issued to the consumer, that is used by the Ball Machine, in order to dispense balls that can then be used.
 
 
 -----
 
 
 ### The Card in Question
-The NFC Card used at the facility was powered by the [Mifare Classic 1K](https://www.nxp.com/docs/en/data-sheet/MF1S50YYX_V1.pdf), a widely deployed High-Frequency chipset. These chips are prevalent across various industries due to their convenience. 
+The NFC Card used at the facility was powered by the [Mifare Classic 1K](https://www.nxp.com/docs/en/data-sheet/MF1S50YYX_V1.pdf), a widely deployed High-Frequency chipset. These chips are prevalent across various industries due to being widely available and affordable. 
 
-A simple scan revealed its identity: 
+A quick scan revealed its identity: 
 
 ``` hf search ```
 
@@ -47,8 +48,6 @@ The Mifare Classic chipset, while widely used, possesses exploitable cryptograph
 -----
 
 
-
-
 ``` hf mf autopwn ```
 
 ```
@@ -63,13 +62,12 @@ Result:
 
 
 ### Double Trouble
-To begin my investigation I added $20 worth of credit to my card and then dumped the credentials of the card into a ```.eml``` file. I then made a replica of my card using a Gen1a Magic Mifare Classic Card, which is a special type of mifare classic, used in duplication operations as it allows all of its data to be changed to reflect that of another mifare classic including its Unique Identifier. 
+To begin my investigation I added $20 worth of credit to my card and then dumped the credentials of the card into a .eml file. I then made a replica of my card using a Gen1a Magic Mifare Classic Card, which is a special type of Mifare Classic, used in duplication operations as it allows all of its data to be changed to reflect that of another Mifare Classic including its Unique Identifier.
 
-After several swings, decreasing the available credit on the Original Driving Range Card, I applied the duplicated card to the reader, which showed I still had $20 left. 
-This was interesting, as this means that the card itself must be locally storing the credit on the card and not utilizing any kind of back-end validation system to track balances.
+At the driving range, I took several swings, decreasing the available credit on the Original Driving Range Card, I applied the duplicated card to the reader, which showed I still had $20 left. This was interesting, it means the credit on the card s stored locally, not utilizing any kind of back-end validation system to track balances.
 
-> While this is the intended purpose of Mifare Classic cards, due to the insecurity of having the credits stored locally in plain ASCII, untracked digitally, and the issues that arise from users losing their card, most places that would use these cards, instead use a value system.
->> IE: Arcades tend to use this type of card solely as an identifier which is then used to look up the user's information on a back-end system where the value is stored and retrieved as necessary.
+> While this is the intended purpose of Mifare Classic Cards, there are still insecurities of having the credits stored locally in plain ASCII (Plain Text). When a system doesn’t use any form of obfuscation, an individual like me can plainly see how the data is mapped. Since I know that the credits are untracked digitally, I am able to amend the balance to any amount that I’d like.
+>> e.g.) Arcades tend to use this type of card solely as an identifier which is then used to look up the user’s information on a back-end system where the value is stored and retrieved as necessary.
 
 
 -----
@@ -88,18 +86,16 @@ This was interesting, as this means that the card itself must be locally storing
 ### Data Transfer and Replication
 With the Proxmark3 Easy at my disposal, I performed successful scans and data extraction from the NFC Driving Range Card.
 
-
-The extracted data formed the foundation for the subsequent duplications of the card's information onto a blank Gen1a Magic Mifare Classic Card, setting the stage for comprehensive testing.
+The extracted data formed the foundation for the subsequent duplications of the card’s information onto a blank Gen1a Magic Mifare Classic Card, setting the stage for comprehensive testing.
 
 
 -----
 
 
 ### Discovering the 'Source of Truth'
-An alarming realization surfaced during my early tests at the Driving Range. I had discovered that the 'source of truth', for determining the card's fund balance, resided solely within the card itself.
+An alarming realization surfaced during my early tests at the Driving Range. I discovered the ‘source of truth’, for determining the card’s fund balance, resided solely within the card itself.
 
-
-This revelation contrasted sharply with my initial assumption, that such data would be centrally administered, either on a server or within the Driving Range's equipment.
+This revelation contrasted sharply with my initial hypothesis; that data was be centrally administered on a server or within the Driving Range’s equipment.
 
 
 -----
@@ -108,9 +104,7 @@ This revelation contrasted sharply with my initial assumption, that such data wo
 ### Local Values
 When analyzing the memory of the original credential with that of the duplicate, it revealed discrepancies in blocks 5 and 6 of the Mifare Classics.
 
-
 These differences strongly suggested that any stored value resided in these blocks.
-
 
 To further analyze this vulnerability, I converted the hexadecimal contents of the blocks to ASCII
 
@@ -163,13 +157,11 @@ The ASCII interpretation of the hexadecimal data exposed the text "0010.22481." 
 
 
 ## Editing and Testing NFC Cards
-Now I knew that the data was stored locally on the cards and where the information was in the data blocks.
+I knew that the data was stored locally on the cards and where the information was in the data blocks.
 
+Next, I decided to edit the card’s data for testing purposes; allowing me to determine the potential seriousness of the vulnerability.
 
-I decided that the next step would be to start editing the card's data for testing purposes. This would allow me to determine just how serious of a vulnerability this could potentially be.
-
-
-> In the following phase of the attempted exploitation, the objective was to modify the card's data and write it onto a new card for the purpose of testing.
+> In the following phase of the attempted exploitation, the objective was to modify the card’s data and write it onto a new card for the purpose of testing.
 
 ### Data Dump
 The card's data was successfully extracted into a ```.eml``` file, allowing for specific line modifications. 
@@ -232,9 +224,9 @@ The important thing here, is that the UID of the cloned card, matches the UID of
 
 
 ### Testing the Edited Card
-With the newly cloned and edited card in hand, I went back to the Driving Range to test if my theory was correct.
+With the newly cloned and edited card in hand, I went back to the Driving Range to test my hypothesis.
 
-And to my surprise, I was greeted with the following when I slotted in the custom card.
+I was greeted with the following when I slotted in the custom card.
 - Currency Availability: The ASCII text '420.69' denotes the available currency balance on the card.
 - Tee Height: The numeric value '42' denotes the tee height configuration.
 
@@ -252,11 +244,11 @@ For visual documentation of the testing process, please refer to the image provi
 
 
 ### Secondary Testing of the Edited Card
-Now that I know that I am able to change the amount that is on the card, along with other minor settings, such as the tee height. I then wanted to test if the system had any type of security in place, to only allow "whitelisted" UIDs.
+Now that I know that I am able to change the amount that is on the card, along with other minor settings, such as the tee height. I then wanted to test if the system had any type of security in place, to only allow “whitelisted” UIDs.
 
 
 ### DNGO Hex Test
-In order to test if UIDs were being Whitelisted, I decided to change the UID of a Duplicated Card that I knew worked originally.  I changed the UID from:
+In order to test if UIDs were being Whitelisted, I decided to change the UID of a Duplicated Card that I knew worked originally. I changed the UID from:
 ```
 [+]  UID: 1E E6 5D 01
 [+] ATQA: 00 04
@@ -296,9 +288,7 @@ In the world of NFC card security, the Mifare Classic 1K chipset is a recurring 
 ### Local Storage of Card Data
 One of the notable revelations during my investigation was that the local storage of credit data, was on the card itself in ASCII.
 
-
 Unlike systems that rely on centralized servers for balance validation, the Mifare Classic card stores this information internally. While this approach aligns with its intended use, it introduces security risks, especially if the card is lost or stolen.
-
 
 -----
 
@@ -306,8 +296,6 @@ Unlike systems that rely on centralized servers for balance validation, the Mifa
 ## Conclusion
 In conclusion, this investigation into NFC Cards at The Driving Range unveiled significant vulnerabilities inherent in the widely used Mifare Classic 1K chipset.
 
-
 These vulnerabilities, such as key recovery and the ability to locally edit card data, shed light on the risks associated with relying on local storage for card information, raising concerns about data security and exploitation potential.
-
 
 The findings underscore the importance of adopting more secure practices in card-based systems and reevaluating the reliance on outdated technologies susceptible to manipulation.
